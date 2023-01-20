@@ -8,6 +8,10 @@ import styles from "./header.module.css"
 export default function Header() {
   const { data: session, status } = useSession()
   const loading = status === "loading"
+  const logOutUrl = new URL(process.env.NEXT_PUBLIC_AZURE_LOGOUT_URI as string);
+  logOutUrl.searchParams.append('post_logout_redirect_uri', process.env.NEXT_PUBLIC_LOGOUT_REDIRECT_URI as string);
+
+  console.log('s', session);
 
   return (
     <header>
@@ -15,6 +19,7 @@ export default function Header() {
         <style>{`.nojs-show { opacity: 1; top: 0; }`}</style>
       </noscript>
       <div className={styles.signedInStatus}>
+        <p></p>
         <p
           className={`nojs-show ${
             !session && loading ? styles.loading : styles.loaded
@@ -30,7 +35,7 @@ export default function Header() {
                 className={styles.buttonPrimary}
                 onClick={(e) => {
                   e.preventDefault()
-                  signIn()
+                  signIn('azure-ad-b2c', { callbackUrl: process.env.NEXT_PUBLIC_LOGIN_REDIRECT_URI as string })
                 }}
               >
                 Sign in
@@ -55,7 +60,13 @@ export default function Header() {
                 className={styles.button}
                 onClick={(e) => {
                   e.preventDefault()
-                  signOut()
+                  /**
+                   * Logout and redirect to azure to complete the logout.
+                   * This is required to clear the azure state from the browser
+                   */
+                  signOut().then(() => {
+                    window.location.replace(logOutUrl.toString());
+                  })
                 }}
               >
                 Sign out
